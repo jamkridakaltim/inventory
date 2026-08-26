@@ -9,8 +9,6 @@ import report from '../pages/auth/report.vue'
 import inputaset from '../pages/auth/inputaset.vue'
 import daftaraset from '../pages/auth/daftaraset.vue'
 
-import locationIndex from '../pages/location/Index.vue'
-
 
 const routes = [
 
@@ -115,18 +113,7 @@ const routes = [
     },
 
 
-    // =========================
-    // LOCATION
-    // Belum diberikan akses role
-    // =========================
-    {
-        path: '/location',
-        component: locationIndex,
-        meta: {
-            requiresAuth: true,
-            roles: []
-        }
-    }
+
 
 ]
 
@@ -191,13 +178,20 @@ router.beforeEach((to) => {
 
     if (to.meta.guest) {
 
-        if (token && user) {
+    if (token && user) {
 
-            return '/dashboard'
+        const roleId = Number(user?.role_id)
 
+        const roleHome = {
+            1: '/dashboard',
+            2: '/dashboard',
+            3: '/direktur'
         }
 
+        return roleHome[roleId] || '/login'
     }
+
+}
 
 
     // ==========================================

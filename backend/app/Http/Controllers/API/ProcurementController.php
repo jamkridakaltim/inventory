@@ -262,15 +262,13 @@ public function receive(Procurement $procurement): JsonResponse
 
                 $createdAssets[] = $asset;
             }
-        }
 
-        /*
- * Tandai item pengajuan sebagai sudah diproses
- * setelah asset berhasil dibuat.
- */
-$requestItem->update([
+            // Tandai item pengajuan ini sebagai sudah diproses
+        $procurementItem->update([
     'item_status' => 'procured',
 ]);
+        }
+
 
         /*
          * Pastikan minimal ada asset yang dibuat.

@@ -492,28 +492,50 @@ const activeMenu = ref('Dashboard')
 
 const user = ref(null)
 
-try {
-    const userData = localStorage.getItem('user')
-
-    if (userData) {
-        user.value = JSON.parse(userData)
-    }
-} catch (error) {
-    console.error('Gagal membaca data user:', error)
-}
-
 const allMenus = [
-  { label: 'Dashboard', icon: '◉', path: '/dashboard', roles: [1, 2] },
-  { label: 'Persetujuan', icon: '✎', path: '/direktur', roles: [3] },
-  { label: 'Laporan/Memo', icon: '▤', path: '/report', roles: [1] },
-  { label: 'Daftar Aset', icon: '📋', path: '/daftaraset', roles: [1, 3] },
-  { label: 'Input Aset', icon: '✚', path: '/inputaset', roles: [1] },
-  { label: 'Profile', icon: '☺', path: '/profile', roles: [1, 2, 3] }
+  {
+    label: 'Dashboard',
+    icon: '◉',
+    path: '/dashboard',
+    roles: [1, 2]
+  },
+  {
+    label: 'Persetujuan',
+    icon: '✎',
+    path: '/direktur',
+    roles: [3]
+  },
+  {
+    label: 'Laporan/Memo',
+    icon: '▤',
+    path: '/report',
+    roles: [1]
+  },
+  {
+    label: 'Daftar Aset',
+    icon: '📋',
+    path: '/daftaraset',
+    roles: [1, 3]
+  },
+  {
+    label: 'Input Aset',
+    icon: '✚',
+    path: '/inputaset',
+    roles: [1]
+  },
+  {
+    label: 'Profile',
+    icon: '☺',
+    path: '/profile',
+    roles: [1, 2, 3]
+  }
 ]
 
 const menus = computed(() => {
+  const roleId = Number(userRoleId.value)
+
   return allMenus.filter(menu =>
-    menu.roles.includes(userRoleId.value)
+    menu.roles.includes(roleId)
   )
 })
 
@@ -570,14 +592,15 @@ onMounted(async () => {
 
   if (savedUser) {
     try {
-      const user = JSON.parse(savedUser)
+      user.value = JSON.parse(savedUser)
 
       userName.value =
-        user.full_name ||
-        user.username ||
+        user.value.full_name ||
+        user.value.username ||
         'Admin'
 
-      userRoleId.value = user.role_id
+      userRoleId.value =
+        Number(user.value.role_id)
 
     } catch (error) {
       console.error('Gagal membaca data user:', error)

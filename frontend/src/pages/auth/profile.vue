@@ -11,18 +11,28 @@
         </div>
 
         <nav class="sidebar-nav">
-          <button
-            v-for="menu in menus"
-            :key="menu.label"
-            class="nav-item"
-            :class="{ active: activeMenu === menu.label }"
-            type="button"
-            @click="handleMenuClick(menu)"
-          >
-            <span class="nav-icon">{{ menu.icon }}</span>
-            <span>{{ menu.label }}</span>
-          </button>
-        </nav>
+  <button
+    v-for="menu in menus"
+    :key="menu.label"
+    class="nav-item"
+    :class="{ active: activeMenu === menu.label }"
+    type="button"
+    @click="handleMenuClick(menu)"
+  >
+    <span class="nav-icon">{{ menu.icon }}</span>
+    <span>{{ menu.label }}</span>
+  </button>
+
+  <!-- LOGOUT -->
+  <button
+    class="nav-item logout-item"
+    type="button"
+    @click="logout"
+  >
+    <span class="nav-icon">↪</span>
+    <span>Logout</span>
+  </button>
+</nav>
       </aside>
 
       <main class="main-content">
@@ -32,9 +42,12 @@
               <p class="fw-bold mb-0">AKUN SAYA</p>
               <h2 class="fw-bold mb-0">Profile</h2>
             </div>
-            <button class="btn btn-outline-secondary mt-3 mt-md-0" @click="router.push('/dashboard')">
-              Kembali ke Dashboard
-            </button>
+            <button
+    class="btn btn-outline-secondary mt-3 mt-md-0"
+    @click="goToHome"
+>
+    Kembali ke Halaman Utama
+</button>
           </div>
 
           <div class="card shadow-sm border-0">
@@ -84,6 +97,15 @@
                   <label class="form-label fw-semibold">Password Baru</label>
                   <input v-model="profile.newPassword" type="password" class="form-control" placeholder="Masukkan password baru" />
                 </div>
+                <div class="col-12 col-md-8">
+  <label class="form-label fw-semibold">Konfirmasi Password Baru</label>
+  <input
+    v-model="profile.confirmPassword"
+    type="password"
+    class="form-control"
+    placeholder="Masukkan ulang password baru"
+  />
+</div>
 
                 <div class="col-12 col-md-8 d-flex justify-content-end">
                   <button class="btn btn-primary btn-sm" @click="saveProfile">Simpan Perubahan</button>
@@ -98,69 +120,302 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 const activeMenu = ref('Profile')
+const roleId = ref(null)
 
-const menus = [
-  { label: 'Dashboard', icon: '◉', path: '/dashboard' },
-  { label: 'Persetujuan', icon: '✎', path: '/direktur' },
-  { label: 'Laporan/Memo', icon: '▤', path: '/report' },
-  { label: 'Daftar Aset', icon: '📋', path: '/daftaraset' },
-  { label: 'Input Aset', icon: '✚', path: '/inputaset' },
-  { label: 'Profile', icon: '☺', path: '/profile' }
+const allMenus = [
+  { label: 'Dashboard', icon: '◉', path: '/dashboard', roles: [1, 2] },
+  { label: 'Persetujuan', icon: '✎', path: '/direktur', roles: [3] },
+  { label: 'Laporan/Memo', icon: '▤', path: '/report', roles: [1] },
+  { label: 'Daftar Aset', icon: '📋', path: '/daftaraset', roles: [1, 3] },
+  { label: 'Input Aset', icon: '✚', path: '/inputaset', roles: [1] },
+  { label: 'Profile', icon: '☺', path: '/profile', roles: [1, 2, 3] }
 ]
+
+const menus = computed(() => {
+  return allMenus.filter(menu => {
+    return menu.roles.includes(roleId.value)
+  })
+})
 
 function handleMenuClick(menu) {
   router.push(menu.path)
   activeMenu.value = menu.label
 }
 
+async function logout() {
+  try {
+    await axios.post(
+      'http://127.0.0.1:8000/api/logout',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Accept: 'application/json'
+        }
+      }
+    )
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('loggedInUserEmail')
+
+    router.push('/login')
+  }
+}
+
+function goToHome() {
+    const savedUser = localStorage.getItem('user')
+
+    if (!savedUser) {
+        router.push('/login')
+        return
+    }
+
+    try {
+        const user = JSON.parse(savedUser)
+        const roleId = Number(user?.role_id)
+
+        if (roleId === 3) {
+            router.push('/direktur')
+        } else {
+            router.push('/dashboard')
+        }
+
+    } catch (error) {
+        console.error('Gagal membaca data user:', error)
+        router.push('/login')
+    }
+}
+
 const fileInput = ref(null)
 
 const profile = ref({
-  name: 'Admin',
-  username: 'admin',
+  name: '',
+  username: '',
   email: '',
   photoUrl: '',
   password: '',
-  newPassword: ''
+  newPassword: '',
+  confirmPassword: ''
 })
 
-onMounted(() => {
-  const savedEmail = localStorage.getItem('loggedInUserEmail')
-  if (savedEmail) {
-    profile.value.name = savedEmail.split('@')[0]
-    profile.value.username = savedEmail.split('@')[0]
-    profile.value.email = savedEmail
+function getAuthHeaders() {
+  const token = localStorage.getItem('token')
+
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json'
   }
-})
+}
+
+/*
+ * Mengambil profile dari backend.
+ */
+async function getProfile() {
+  try {
+    const response = await axios.get(
+      'http://127.0.0.1:8000/api/profile',
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Accept: 'application/json'
+        }
+      }
+    )
+
+    console.log('GET PROFILE:', response.data)
+
+    const user = response.data.data
+
+    // Simpan role user
+    roleId.value = user.role_id
+
+    // Isi data profile
+    profile.value.name = user.full_name
+    profile.value.username = user.username
+    profile.value.email = user.email
+    profile.value.photoUrl = user.photo_url || ''
+
+  } catch (error) {
+    console.error('GET PROFILE ERROR:', error)
+  }
+}
+
+/*
+ * Menyimpan perubahan profile.
+ */
+async function saveProfile() {
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    alert('Token login tidak ditemukan. Silakan login kembali.')
+    return
+  }
+
+  try {
+    // ==========================================
+    // 1. UPDATE DATA PROFILE
+    // ==========================================
+
+    const profileResponse = await fetch(
+      'http://127.0.0.1:8000/api/profile',
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          full_name: profile.value.name,
+          username: profile.value.username,
+          email: profile.value.email,
+          photo_url: profile.value.photoUrl || null
+        })
+      }
+    )
+
+    const profileData = await profileResponse.json()
+
+    console.log('UPDATE PROFILE RESPONSE:', profileData)
+
+    if (!profileResponse.ok) {
+      alert(profileData.message || 'Gagal memperbarui profile.')
+      return
+    }
+
+    // ==========================================
+    // 2. JIKA USER INGIN GANTI PASSWORD
+    // ==========================================
+
+    if (
+      profile.value.password ||
+      profile.value.newPassword ||
+      profile.value.confirmPassword
+    ) {
+
+      // Password lama wajib diisi
+      if (!profile.value.password) {
+        alert('Masukkan password saat ini.')
+        return
+      }
+
+      // Password baru wajib diisi
+      if (!profile.value.newPassword) {
+        alert('Masukkan password baru.')
+        return
+      }
+
+      // Konfirmasi password wajib diisi
+      if (!profile.value.confirmPassword) {
+        alert('Masukkan konfirmasi password baru.')
+        return
+      }
+
+      // Password baru harus sama
+      if (
+        profile.value.newPassword !==
+        profile.value.confirmPassword
+      ) {
+        alert('Konfirmasi password baru tidak sama.')
+        return
+      }
+
+      // Minimal 8 karakter
+      if (profile.value.newPassword.length < 8) {
+        alert('Password baru minimal 8 karakter.')
+        return
+      }
+
+      // ==========================================
+      // REQUEST CHANGE PASSWORD
+      // ==========================================
+
+      const passwordResponse = await fetch(
+        'http://127.0.0.1:8000/api/profile/change-password',
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            current_password: profile.value.password,
+            new_password: profile.value.newPassword,
+            new_password_confirmation:
+              profile.value.confirmPassword
+          })
+        }
+      )
+
+      const passwordData = await passwordResponse.json()
+
+      console.log(
+        'CHANGE PASSWORD RESPONSE:',
+        passwordData
+      )
+
+      if (!passwordResponse.ok) {
+        alert(
+          passwordData.message ||
+          'Gagal mengubah password.'
+        )
+        return
+      }
+
+      // Bersihkan field password
+      profile.value.password = ''
+      profile.value.newPassword = ''
+      profile.value.confirmPassword = ''
+
+      alert('Profile dan password berhasil diperbarui.')
+
+      return
+    }
+
+    // ==========================================
+    // HANYA UPDATE PROFILE
+    // ==========================================
+
+    alert('Profile berhasil diperbarui.')
+
+  } catch (error) {
+    console.error('SAVE PROFILE ERROR:', error)
+    alert('Terjadi kesalahan saat menyimpan profile.')
+  }
+}
 
 function triggerFileInput() {
-  fileInput.value.click()
+  fileInput.value?.click()
 }
 
 function onPhotoChange(event) {
   const file = event.target.files[0]
+
   if (!file) return
+
   const reader = new FileReader()
+
   reader.onload = (e) => {
     profile.value.photoUrl = e.target.result
   }
+
   reader.readAsDataURL(file)
 }
 
-function saveProfile() {
-  if (profile.value.newPassword && !profile.value.password) {
-    alert('Masukkan password saat ini untuk mengganti password')
-    return
-  }
-  alert('Profile berhasil disimpan')
-  profile.value.password = ''
-  profile.value.newPassword = ''
-}
+onMounted(() => {
+  getProfile()
+})
 </script>
 
 <style scoped>
@@ -290,6 +545,16 @@ function saveProfile() {
 
 .avatar-edit-btn:hover {
   background: #1d4ed8;
+}
+
+.logout-item {
+  margin-top: 10px;
+  color: #fca5a5;
+}
+
+.logout-item:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #fff;
 }
 
 @media (max-width: 768px) {

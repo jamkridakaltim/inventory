@@ -11,18 +11,30 @@
         </div>
 
         <nav class="sidebar-nav">
-          <button
-            v-for="menu in menus"
-            :key="menu.label"
-            class="nav-item"
-            :class="{ active: activeMenu === menu.label }"
-            type="button"
-            @click="handleMenuClick(menu)"
-          >
-            <span class="nav-icon">{{ menu.icon }}</span>
-            <span>{{ menu.label }}</span>
-          </button>
-        </nav>
+
+  <button
+    v-for="menu in menus"
+    :key="menu.label"
+    class="nav-item"
+    :class="{ active: activeMenu === menu.label }"
+    type="button"
+    @click="handleMenuClick(menu)"
+  >
+    <span class="nav-icon">{{ menu.icon }}</span>
+    <span>{{ menu.label }}</span>
+  </button>
+
+  <!-- LOGOUT -->
+  <button
+    class="nav-item logout-item"
+    type="button"
+    @click="logout"
+  >
+    <span class="nav-icon">↪</span>
+    <span>Logout</span>
+  </button>
+
+</nav>
       </aside>
 
       <main class="main-content">
@@ -33,9 +45,21 @@
               <h2 class="fw-bold mb-0">Inventaris Aset</h2>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-              <button class="btn btn-outline-primary" @click="refreshAssets">Refresh</button>
-              <button class="btn btn-primary" @click="goToInputAset">Input Aset Baru</button>
-            </div>
+  <button
+    class="btn btn-outline-primary"
+    @click="refreshAssets"
+  >
+    Refresh
+  </button>
+
+  <button
+    v-if="userRoleId === 1"
+    class="btn btn-primary"
+    @click="goToInputAset"
+  >
+    Input Aset Baru
+  </button>
+</div>
           </div>
 
           <div class="search-bar-card mb-4">
@@ -110,10 +134,34 @@
                   </div>
 
                   <div class="d-flex flex-wrap gap-2 mt-4">
-                    <button class="btn btn-outline-secondary btn-sm" @click="viewAsset(asset)">Detail</button>
-                    <button class="btn btn-outline-success btn-sm" @click="editAsset(asset)">Edit</button>
-                    <button class="btn btn-outline-danger btn-sm" @click="deleteAsset(asset)">Hapus</button>
-                  </div>
+
+  <!-- Semua role boleh melihat detail -->
+  <button
+    class="btn btn-outline-secondary btn-sm"
+    @click="viewAsset(asset)"
+  >
+    Detail
+  </button>
+
+  <!-- Hanya Admin -->
+  <button
+    v-if="userRoleId === 1"
+    class="btn btn-outline-success btn-sm"
+    @click="editAsset(asset)"
+  >
+    Edit
+  </button>
+
+  <!-- Hanya Admin -->
+  <button
+    v-if="userRoleId === 1"
+    class="btn btn-outline-danger btn-sm"
+    @click="deleteAsset(asset)"
+  >
+    Hapus
+  </button>
+
+</div>
                 </div>
               </div>
             </div>
@@ -178,24 +226,98 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../../api/axios'
 
 const router = useRouter()
-const activeMenu = ref('Daftar Aset')
 
-const menus = [
-  { label: 'Dashboard', icon: '◉', path: '/dashboard' },
-  { label: 'Persetujuan', icon: '✎', path: '/direktur' },
-  { label: 'Laporan/Memo', icon: '▤', path: '/report' },
-  { label: 'Daftar Aset', icon: '📋', path: '/daftaraset' },
-  { label: 'Input Aset', icon: '✚', path: '/inputaset' },
-  { label: 'Profile', icon: '☺', path: '/profile' }
+const activeMenu = ref('Daftar Aset')
+const userRoleId = ref(null)
+
+const allMenus = [
+  {
+    label: 'Dashboard',
+    icon: '◉',
+    path: '/dashboard',
+    roles: [1, 2]
+  },
+  {
+    label: 'Persetujuan',
+    icon: '✎',
+    path: '/direktur',
+    roles: [3]
+  },
+  {
+    label: 'Laporan/Memo',
+    icon: '▤',
+    path: '/report',
+    roles: [1]
+  },
+  {
+    label: 'Daftar Aset',
+    icon: '📋',
+    path: '/daftaraset',
+    roles: [1, 3]
+  },
+  {
+    label: 'Input Aset',
+    icon: '✚',
+    path: '/inputaset',
+    roles: [1]
+  },
+  {
+    label: 'Profile',
+    icon: '☺',
+    path: '/profile',
+    roles: [1, 2, 3]
+  }
 ]
+
+const menus = computed(() => {
+  const roleId = Number(userRoleId.value)
+
+  return allMenus.filter(menu =>
+    menu.roles.includes(roleId)
+  )
+})
+
+onMounted(() => {
+  const savedUser = localStorage.getItem('user')
+
+  if (!savedUser) {
+    router.push('/login')
+    return
+  }
+
+  try {
+    const user = JSON.parse(savedUser)
+
+    userRoleId.value = Number(user?.role_id)
+
+  } catch (error) {
+    console.error('Gagal membaca data user:', error)
+    router.push('/login')
+  }
+})
 
 function handleMenuClick(menu) {
   router.push(menu.path)
   activeMenu.value = menu.label
+}
+
+async function logout() {
+  try {
+    await api.post('/logout')
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('loggedInUserEmail')
+
+    router.push('/login')
+  }
 }
 
 const selectedAsset = ref(null)
@@ -339,6 +461,16 @@ function goToInputAset() {
 .nav-item:hover,
 .nav-item.active {
   background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.logout-item {
+  margin-top: 10px;
+  color: #fca5a5;
+}
+
+.logout-item:hover {
+  background: rgba(220, 38, 38, 0.15);
   color: #fff;
 }
 

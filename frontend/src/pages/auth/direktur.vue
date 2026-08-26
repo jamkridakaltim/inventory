@@ -38,14 +38,11 @@
       <main class="main-content">
         <div class="container py-4">
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <div>
-              <p class="fw-bold mb-0">RINGKASAN PENGAJUAN</p>
-              <h2 class="fw-bold mb-0">Persetujuan</h2>
-            </div>
-            <button class="btn btn-outline-secondary mt-3 mt-md-0" @click="router.push('/dashboard')">
-              Kembali ke Dashboard
-            </button>
-          </div>
+  <div>
+    <p class="fw-bold mb-0">RINGKASAN PENGAJUAN</p>
+    <h2 class="fw-bold mb-0">Persetujuan</h2>
+  </div>
+</div>
 
           <div class="card shadow-sm border-0 mb-3">
             <div class="card-body">
@@ -238,32 +235,43 @@ import api from '../../api/axios'
 const router = useRouter()
 const activeMenu = ref('Persetujuan')
 
-const menus = [
-  { label: 'Dashboard', icon: '◉', path: '/dashboard' },
-  { label: 'Persetujuan', icon: '✎', path: '/direktur' },
-  { label: 'Laporan/Memo', icon: '▤', path: '/report' },
-  { label: 'Daftar Aset', icon: '📋', path: '/daftaraset' },
-  { label: 'Input Aset', icon: '✚', path: '/inputaset' },
-  { label: 'Profile', icon: '☺', path: '/profile' }
-]
+const menus = computed(() => {
+  return [
+    {
+      label: 'Persetujuan',
+      icon: '✎',
+      path: '/direktur'
+    },
+    {
+      label: 'Daftar Aset',
+      icon: '📋',
+      path: '/daftaraset'
+    },
+    {
+  label: 'Profile',
+  icon: '☺',
+  path: '/profile'
+}
+  ]
+})
 
 function handleMenuClick(menu) {
-    router.push(menu.path)
-    activeMenu.value = menu.label
+  router.push(menu.path)
+  activeMenu.value = menu.label
 }
 
 async function logout() {
-    try {
-        await api.post('/logout')
-    } catch (error) {
-        console.error('Logout error:', error)
-    } finally {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        localStorage.removeItem('loggedInUserEmail')
+  try {
+    await api.post('/logout')
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('loggedInUserEmail')
 
-        router.push('/login')
-    }
+    router.push('/login')
+  }
 }
 
 const pimpinanSearch = ref('')
