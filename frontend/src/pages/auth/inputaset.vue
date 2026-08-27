@@ -51,9 +51,14 @@
 
           <form @submit.prevent="saveAsset" class="row g-3">
             <div class="col-12 col-md-4">
-              <label class="form-label">No Register *</label>
-              <input v-model="form.noRegister" type="text" class="form-control" placeholder="No Register" />
-            </div>
+  <label class="form-label">Kondisi *</label>
+  <select v-model="form.kondisi" class="form-select">
+    <option>Baik</option>
+    <option>Rusak Ringan</option>
+    <option>Rusak Berat</option>
+    <option>Hilang</option>
+  </select>
+</div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Tanggal Pembelian *</label>
@@ -61,9 +66,19 @@
             </div>
 
             <div class="col-12 col-md-4">
-              <label class="form-label">Bukti Pembelian *</label>
-              <input v-model="form.buktiPembelian" type="text" class="form-control" placeholder="Bukti Pembelian" />
-            </div>
+  <label class="form-label">Bukti Pembelian *</label>
+
+  <input
+    type="file"
+    class="form-control"
+    accept=".jpg,.jpeg,.png,.pdf"
+    @change="onPurchaseProofChange"
+  />
+
+  <small v-if="purchaseProofName" class="text-muted">
+    {{ purchaseProofName }}
+  </small>
+</div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Nomor Bukti Pembelian *</label>
@@ -93,35 +108,41 @@
             <div class="col-12 col-md-4">
               <label class="form-label">Kategori *</label>
               <select v-model="form.kategori" class="form-select">
-                <option value="" disabled>Pilih Kategori</option>
-                <option>Elektronik</option>
-                <option>Furniture</option>
-                <option>Kendaraan</option>
-                <option>Alat Kantor</option>
-                <option>Lainnya</option>
-              </select>
+  <option value="" disabled>Pilih Kategori</option>
+
+  <option
+    v-for="category in categories"
+    :key="category.id"
+    :value="category.id"
+  >
+    {{ category.name }}
+  </option>
+</select>
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Lokasi *</label>
               <select v-model="form.lokasi" class="form-select">
-                <option value="" disabled>Pilih Lokasi</option>
-                <option>Gedung A</option>
-                <option>Gedung B</option>
-                <option>Gudang</option>
-                <option>Site Lapangan</option>
-              </select>
+  <option value="" disabled>Pilih Lokasi</option>
+
+  <option
+    v-for="location in locations"
+    :key="location.id"
+    :value="location.id"
+  >
+    {{ location.name }}
+  </option>
+</select>
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Pemakai *</label>
-              <select v-model="form.pemakai" class="form-select">
-                <option value="" disabled>Pilih Pemakai</option>
-                <option>Admin</option>
-                <option>Keuangan</option>
-                <option>Teknisi</option>
-                <option>Manajer</option>
-              </select>
+              <input
+  v-model="form.pemakai"
+  type="text"
+  class="form-control"
+  placeholder="Nama Pemakai"
+/>
             </div>
 
             <div class="col-12 col-md-4">
@@ -130,18 +151,17 @@
             </div>
 
             <div class="col-12 col-md-4">
-              <label class="form-label">Kondisi *</label>
-              <select v-model="form.kondisi" class="form-select">
-                <option>Baik</option>
-                <option>Rusak Ringan</option>
-                <option>Rusak Berat</option>
-                <option>Perlu Servis</option>
-              </select>
+
             </div>
             
             <div class="col-12 col-md-4">
-              <label class="form-label">No Memo *</label>
-              <input v-model="form.noMemo" type="text" class="form-control" placeholder="No Memo" />
+              <label class="form-label">No Memo</label>
+<input
+  v-model="form.noMemo"
+  type="text"
+  class="form-control"
+  placeholder="No Memo (opsional)"
+/>
             </div>
 
             <div class="col-12">
@@ -217,10 +237,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const activeMenu = ref('Input Aset')
 
 const menus = [
@@ -233,25 +254,48 @@ const menus = [
 ]
 
 function handleMenuClick(menu) {
-  router.push(menu.path)
   activeMenu.value = menu.label
+  router.push(menu.path)
 }
 
-const initialForm = () => ({ 
-  noRegister: '',
+
+/*
+|--------------------------------------------------------------------------
+| DATA MASTER
+|--------------------------------------------------------------------------
+*/
+
+const categories = ref([])
+const locations = ref([])
+const users = ref([])
+
+const generatedAssetCode = ref('')
+
+/*
+|--------------------------------------------------------------------------
+| FORM
+|--------------------------------------------------------------------------
+*/
+
+const initialForm = () => ({
   tanggalPembelian: '',
-  buktiPembelian: '',
+  buktiPembelian: null,
   noBuktiPembelian: '',
+
   namaBarang: '',
   type: '',
   merk: '',
   noSeri: '',
+
   kategori: '',
   lokasi: '',
   pemakai: '',
+
   harga: 0,
   kondisi: 'Baik',
+
   noMemo: '',
+
   fotoAset: null,
   fotoStiker: null,
   fotoLokasi: null,
@@ -259,77 +303,530 @@ const initialForm = () => ({
 })
 
 const form = ref(initialForm())
+
 const errors = ref({})
+
+/*
+|--------------------------------------------------------------------------
+| PREVIEW FOTO
+|--------------------------------------------------------------------------
+*/
+
 const fotoAsetPreview = ref(null)
 const fotoStikerPreview = ref(null)
 const fotoLokasiPreview = ref(null)
 const fotoMemoPreview = ref(null)
 
+const purchaseProofName = ref('')
+
+/*
+|--------------------------------------------------------------------------
+| RESET FORM
+|--------------------------------------------------------------------------
+*/
+
 function resetForm() {
   form.value = initialForm()
+
   errors.value = {}
+
+  generatedAssetCode.value = ''
+
+  purchaseProofName.value = ''
+
   fotoAsetPreview.value = null
   fotoStikerPreview.value = null
   fotoLokasiPreview.value = null
   fotoMemoPreview.value = null
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| FILE BUKTI PEMBELIAN
+|--------------------------------------------------------------------------
+*/
+
+function onPurchaseProofChange(event) {
+  const file = event.target.files?.[0]
+
+  if (!file) {
+    form.value.buktiPembelian = null
+    purchaseProofName.value = ''
+    return
+  }
+
+  form.value.buktiPembelian = file
+  purchaseProofName.value = file.name
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FILE FOTO
+|--------------------------------------------------------------------------
+*/
+
 function onFileChange(event, fieldKey, previewKey) {
   const file = event.target.files?.[0]
+
   if (!file) return
+
   form.value[fieldKey] = file
+
   const reader = new FileReader()
+
   reader.onload = (e) => {
-    if (previewKey === 'fotoAsetPreview') fotoAsetPreview.value = e.target.result
-    if (previewKey === 'fotoStikerPreview') fotoStikerPreview.value = e.target.result
-    if (previewKey === 'fotoLokasiPreview') fotoLokasiPreview.value = e.target.result
-    if (previewKey === 'fotoMemoPreview') fotoMemoPreview.value = e.target.result
+    if (previewKey === 'fotoAsetPreview') {
+      fotoAsetPreview.value = e.target.result
+    }
+
+    if (previewKey === 'fotoStikerPreview') {
+      fotoStikerPreview.value = e.target.result
+    }
+
+    if (previewKey === 'fotoLokasiPreview') {
+      fotoLokasiPreview.value = e.target.result
+    }
+
+    if (previewKey === 'fotoMemoPreview') {
+      fotoMemoPreview.value = e.target.result
+    }
   }
+
   reader.readAsDataURL(file)
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| VALIDASI FORM
+|--------------------------------------------------------------------------
+*/
+
 function validateForm() {
   errors.value = {}
-  const requiredFields = [
-    'noRegister',
-    'tanggalPembelian',
-    'buktiPembelian',
-    'noBuktiPembelian',
-    'namaBarang',
-    'type',
-    'merk',
-    'noSeri',
-    'kategori',
-    'lokasi',
-    'pemakai',
-    'harga'
-  ]
 
-  requiredFields.forEach((field) => {
-    if (!form.value[field] && form.value[field] !== 0) {
-      errors.value[field] = 'Harap diisi.'
-    }
-  })
+  if (!form.value.tanggalPembelian) {
+    errors.value.tanggalPembelian = 'Tanggal pembelian wajib diisi.'
+  }
+
+  if (!form.value.buktiPembelian) {
+    errors.value.buktiPembelian = 'Bukti pembelian wajib diupload.'
+  }
+
+  if (!form.value.noBuktiPembelian) {
+    errors.value.noBuktiPembelian = 'Nomor bukti pembelian wajib diisi.'
+  }
+
+  if (!form.value.namaBarang) {
+    errors.value.namaBarang = 'Nama barang wajib diisi.'
+  }
+
+  if (!form.value.type) {
+    errors.value.type = 'Type wajib diisi.'
+  }
+
+  if (!form.value.merk) {
+    errors.value.merk = 'Merk wajib diisi.'
+  }
+
+  if (!form.value.noSeri) {
+    errors.value.noSeri = 'Nomor seri wajib diisi.'
+  }
+
+  if (!form.value.kategori) {
+    errors.value.kategori = 'Kategori wajib dipilih.'
+  }
+
+  if (!form.value.lokasi) {
+    errors.value.lokasi = 'Lokasi wajib dipilih.'
+  }
+
+  if (!form.value.pemakai.trim()) {
+  errors.value.pemakai = 'Pemakai wajib diisi.'
+}
+
+  if (
+    form.value.harga === null ||
+    form.value.harga === '' ||
+    Number(form.value.harga) < 0
+  ) {
+    errors.value.harga = 'Harga wajib diisi.'
+  }
+
+  if (!form.value.fotoAset) {
+    errors.value.fotoAset = 'Foto aset wajib diupload.'
+  }
+
+  if (!form.value.fotoStiker) {
+    errors.value.fotoStiker = 'Foto stiker wajib diupload.'
+  }
+
+  if (!form.value.fotoLokasi) {
+    errors.value.fotoLokasi = 'Foto lokasi wajib diupload.'
+  }
 
   return Object.keys(errors.value).length === 0
 }
 
-function saveAsset() {
+
+/*
+|--------------------------------------------------------------------------
+| TOKEN
+|--------------------------------------------------------------------------
+*/
+
+function getToken() {
+  return (
+    localStorage.getItem('token') ||
+    localStorage.getItem('access_token') ||
+    localStorage.getItem('auth_token')
+  )
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD MASTER DATA
+|--------------------------------------------------------------------------
+*/
+
+async function loadMasterData() {
+  const token = getToken()
+
+  try {
+
+    const headers = {
+      Accept: 'application/json'
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+
+    /*
+     * KATEGORI
+     */
+
+    const categoryResponse = await fetch(
+      '/api/categories',
+      {
+        headers
+      }
+    )
+
+    if (categoryResponse.ok) {
+      const categoryResult = await categoryResponse.json()
+
+      categories.value = categoryResult.data || []
+    }
+
+
+    /*
+     * LOKASI
+     */
+
+    const locationResponse = await fetch(
+      '/api/locations',
+      {
+        headers
+      }
+    )
+
+    if (locationResponse.ok) {
+      const locationResult = await locationResponse.json()
+
+      locations.value = locationResult.data || []
+    }
+
+
+    /*
+     * USER
+     */
+
+    const userResponse = await fetch(
+      '/api/users',
+      {
+        headers
+      }
+    )
+
+    if (userResponse.ok) {
+      const userResult = await userResponse.json()
+
+      users.value = userResult.data || []
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Gagal mengambil data master:',
+      error
+    )
+
+  }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SIMPAN ASSET
+|--------------------------------------------------------------------------
+*/
+
+async function saveAsset() {
+
   if (!validateForm()) {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+
     return
   }
 
-  const savedAsset = {
-    ...form.value,
-    harga: Number(form.value.harga),
-    tanggalPembelian: form.value.tanggalPembelian
+
+  const token = getToken()
+
+
+  /*
+   * Gunakan FormData karena ada upload file.
+   */
+
+  const formData = new FormData()
+
+
+  /*
+   * Data asset
+   */
+
+  formData.append(
+    'asset_name',
+    form.value.namaBarang
+  )
+
+  formData.append(
+    'category_id',
+    form.value.kategori
+  )
+
+  formData.append(
+    'brand',
+    form.value.merk
+  )
+
+  formData.append(
+    'model',
+    form.value.type
+  )
+
+  formData.append(
+    'serial_number',
+    form.value.noSeri
+  )
+
+  formData.append(
+    'location_id',
+    form.value.lokasi
+  )
+
+  formData.append(
+  'assigned_user_name',
+  form.value.pemakai.trim()
+)
+
+formData.append(
+  'assigned_user_name',
+  form.value.pemakai
+)
+
+  formData.append(
+    'purchase_date',
+    form.value.tanggalPembelian
+  )
+
+  formData.append(
+    'purchase_proof_number',
+    form.value.noBuktiPembelian
+  )
+
+  formData.append(
+    'acquisition_cost',
+    Number(form.value.harga)
+  )
+
+  formData.append(
+    'condition_status',
+    convertCondition(form.value.kondisi)
+  )
+
+
+
+  /*
+   * Bukti pembelian
+   */
+
+  if (form.value.buktiPembelian) {
+    formData.append(
+      'purchase_proof',
+      form.value.buktiPembelian
+    )
   }
 
-  console.log('Asset tersimpan:', savedAsset)
-  alert('Aset berhasil disimpan.')
-  resetForm()
+
+  /*
+   * Foto asset
+   */
+
+  if (form.value.fotoAset) {
+    formData.append(
+      'photo_asset',
+      form.value.fotoAset
+    )
+  }
+
+
+  /*
+   * Foto sticker
+   */
+
+  if (form.value.fotoStiker) {
+    formData.append(
+      'photo_sticker',
+      form.value.fotoStiker
+    )
+  }
+
+
+  /*
+   * Foto lokasi
+   */
+
+  if (form.value.fotoLokasi) {
+    formData.append(
+      'photo_location',
+      form.value.fotoLokasi
+    )
+  }
+
+
+  /*
+   * Foto memo
+   */
+
+  if (form.value.fotoMemo) {
+    formData.append(
+      'photo_memo',
+      form.value.fotoMemo
+    )
+  }
+
+
+  try {
+
+    const headers = {
+      Accept: 'application/json'
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+
+    const response = await fetch(
+      '/api/assets',
+      {
+        method: 'POST',
+        headers,
+        body: formData
+      }
+    )
+
+
+    const result = await response.json()
+
+
+    if (!response.ok || !result.success) {
+
+      console.error(
+        'Gagal menyimpan asset:',
+        result
+      )
+
+      alert(
+        result.message ||
+        'Aset gagal disimpan.'
+      )
+
+      return
+    }
+
+
+    /*
+     * Ambil nomor register dari backend.
+     */
+
+    generatedAssetCode.value =
+      result.data?.asset_code || ''
+
+
+    alert(
+      `Aset berhasil disimpan.\nNo Register: ${generatedAssetCode.value}`
+    )
+
+
+    /*
+     * Setelah berhasil:
+     * kembali ke daftar aset.
+     */
+
+    router.push('/daftaraset')
+
+
+  } catch (error) {
+
+    console.error(
+      'Error saat menyimpan asset:',
+      error
+    )
+
+    alert(
+      'Terjadi kesalahan saat menghubungi server.'
+    )
+
+  }
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| KONVERSI KONDISI FRONTEND → DATABASE
+|--------------------------------------------------------------------------
+*/
+
+function convertCondition(condition) {
+  const mapping = {
+    'Baik': 'good',
+    'Rusak Ringan': 'fair',
+    'Rusak Berat': 'damaged',
+    'Hilang': 'lost'
+  }
+
+  return mapping[condition] || 'good'
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD SAAT HALAMAN DIBUKA
+|--------------------------------------------------------------------------
+*/
+
+onMounted(() => {
+  loadMasterData()
+})
 </script>
 
 <style scoped>

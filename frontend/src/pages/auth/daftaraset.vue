@@ -324,32 +324,51 @@ const selectedAsset = ref(null)
 const searchQuery = ref('')
 const isSearchFocused = ref(false)
 
-const assets = ref([
-  {
-    id: 1,
-    register: '00226',
-    memo: '11/20',
-    name: 'Kursi',
-    merk: 'Chitose - Caesar (Biru)',
-    category: 'Meubelair',
-    location: '241 - Ruang Rapat',
-    user: 'PUBLIK',
-    condition: 'Baik',
-    price: 555000
-  },
-  {
-    id: 2,
-    register: '00290b',
-    memo: '07/24',
-    name: 'Mic',
-    merk: 'DMU 280',
-    category: 'Elektronik',
-    location: '241 - Ruang Rapat',
-    user: 'PUBLIK',
-    condition: 'Baik',
-    price: 739000
+const assets = ref([])
+
+async function fetchAssets() {
+  try {
+    const response = await api.get('/assets')
+
+    console.log('GET ASSETS:', response.data)
+
+    if (response.data.success) {
+      assets.value = response.data.data.map((asset) => ({
+        id: asset.id,
+
+        register: asset.asset_code ?? '-',
+
+        memo: asset.purchase_proof_number ?? '-',
+
+        name: asset.asset_name ?? '-',
+
+        merk: [asset.brand, asset.model]
+          .filter(Boolean)
+          .join(' - ') || '-',
+
+        category: asset.category?.name ?? '-',
+
+        location: asset.location?.name ?? '-',
+
+        user: asset.assigned_user_name ?? 'Tidak ada pemakai',
+
+        condition: formatCondition(asset.condition_status),
+
+        price: Number(asset.acquisition_cost ?? 0),
+
+        // Simpan data asli jika nanti dibutuhkan
+        raw: asset,
+      }))
+    }
+  } catch (error) {
+    console.error('Gagal mengambil daftar aset:', error)
+
+    alert(
+      error.response?.data?.message ||
+      'Gagal mengambil daftar aset.'
+    )
   }
-])
+}
 
 const filteredAssets = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()

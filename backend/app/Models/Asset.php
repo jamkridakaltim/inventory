@@ -22,6 +22,7 @@ class Asset extends Model
         'serial_number',
         'location_id',
         'assigned_user_id',
+        'assigned_user_name',
         'purchase_date',
         'purchase_proof_number',
         'purchase_proof',

@@ -63,10 +63,10 @@ class StoreAssetRequest extends FormRequest
             ],
 
             'purchase_proof_number' => [
-                'required',
-                'string',
-                'max:100',
-            ],
+    'nullable',
+    'string',
+    'max:100',
+],
 
             'acquisition_cost' => [
                 'required',
@@ -81,6 +81,7 @@ class StoreAssetRequest extends FormRequest
                     'fair',
                     'poor',
                     'damaged',
+                    'lost',
                 ]),
             ],
 
@@ -105,51 +106,54 @@ class StoreAssetRequest extends FormRequest
              * Bukti pembelian.
              */
             'purchase_proof' => [
-                'required',
-                'file',
-                'mimes:jpg,jpeg,png,pdf',
-                'max:2048',
-            ],
+    'nullable',
+    'file',
+    'mimes:jpg,jpeg,png,pdf',
+    'max:2048',
+],
 
             /*
              * Foto asset.
              */
             'photo_asset' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png',
-                'max:2048',
-            ],
+    'nullable',
+    'image',
+    'mimes:jpg,jpeg,png',
+    'max:2048',
+],
 
             /*
              * Foto letak stiker asset.
              */
             'photo_sticker' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png',
-                'max:2048',
-            ],
+    'nullable',
+    'image',
+    'mimes:jpg,jpeg,png',
+    'max:2048',
+],
 
             /*
              * Foto lokasi asset.
              */
-            'photo_location' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png',
-                'max:2048',
-            ],
+    'photo_location' => [
+    'nullable',
+    'image',
+    'mimes:jpg,jpeg,png',
+    'max:2048',
+],
 
-            /*
-             * Foto memo.
-             */
-            'photo_memo' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png',
-                'max:2048',
-            ],
+    'photo_memo' => [
+    'nullable',
+    'image',
+    'mimes:jpg,jpeg,png',
+    'max:2048',
+],
+
+'assigned_user_name' => [
+    'nullable',
+    'string',
+    'max:200',
+],
         ];
     }
 }

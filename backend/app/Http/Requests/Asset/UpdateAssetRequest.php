@@ -134,6 +134,12 @@ class UpdateAssetRequest extends FormRequest
     'mimes:jpg,jpeg,png',
     'max:5120',
 ],
+
+'assigned_user_name' => [
+    'nullable',
+    'string',
+    'max:200',
+],
         ];
     }
 }
