@@ -16,6 +16,7 @@ class StoreUserRequest extends FormRequest
         return [
             'role_id' => 'required|exists:roles,id',
             'department_id' => 'nullable|exists:departments,id',
+            'location_id' => 'nullable|exists:locations,id',
 
             'full_name' => 'required|string|max:150',
 

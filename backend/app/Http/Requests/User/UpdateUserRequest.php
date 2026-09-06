@@ -12,42 +12,46 @@ class UpdateUserRequest extends FormRequest
     }
 
     public function rules(): array
-    {
-        $user = $this->route('user');
+{
+    $user = $this->route('user');
 
-        return [
-            'role_id' => 'required|exists:roles,id',
+    return [
+        'role_id' => 'required|exists:roles,id',
 
-            'department_id' => 'nullable|exists:departments,id',
+        'department_id' => 'nullable|exists:departments,id',
 
-            'full_name' => 'required|string|max:150',
+        'location_id' => 'nullable|exists:locations,id',
 
-            'username' => 'required|string|max:100|unique:users,username,' . $user->id,
+        'full_name' => 'required|string|max:150',
 
-            'email' => 'required|email|max:150|unique:users,email,' . $user->id,
+        'username' => 'required|string|max:100|unique:users,username,' . $user->id,
 
-            'photo_url' => 'nullable|string|max:500',
+        'email' => 'required|email|max:150|unique:users,email,' . $user->id,
 
-            'is_active' => 'required|boolean',
-        ];
-    }
+        'photo_url' => 'nullable|string|max:500',
+
+        'is_active' => 'required|boolean',
+    ];
+}
 
     public function messages(): array
-    {
-        return [
-            'role_id.required' => 'Role wajib dipilih.',
-            'role_id.exists' => 'Role tidak ditemukan.',
+{
+    return [
+        'role_id.required' => 'Role wajib dipilih.',
+        'role_id.exists' => 'Role tidak ditemukan.',
 
-            'department_id.exists' => 'Department tidak ditemukan.',
+        'department_id.exists' => 'Department tidak ditemukan.',
 
-            'full_name.required' => 'Nama lengkap wajib diisi.',
+        'location_id.exists' => 'Lokasi tidak ditemukan.',
 
-            'username.required' => 'Username wajib diisi.',
-            'username.unique' => 'Username sudah digunakan.',
+        'full_name.required' => 'Nama lengkap wajib diisi.',
 
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah digunakan.',
-        ];
-    }
+        'username.required' => 'Username wajib diisi.',
+        'username.unique' => 'Username sudah digunakan.',
+
+        'email.required' => 'Email wajib diisi.',
+        'email.email' => 'Format email tidak valid.',
+        'email.unique' => 'Email sudah digunakan.',
+    ];
+}
 }

@@ -53,10 +53,13 @@ class UpdateAssetRequest extends FormRequest
             ],
 
             'assigned_user_id' => [
-                'nullable',
-                'integer',
-                'exists:users,id',
-            ],
+    'required',
+    'integer',
+    Rule::exists('users', 'id')
+        ->where(function ($query) {
+            $query->where('location_id', $this->location_id);
+        }),
+],
 
             'purchase_date' => [
                 'required',
@@ -82,6 +85,7 @@ class UpdateAssetRequest extends FormRequest
                     'fair',
                     'poor',
                     'damaged',
+                    'lost',
                 ]),
             ],
 
@@ -135,11 +139,6 @@ class UpdateAssetRequest extends FormRequest
     'max:5120',
 ],
 
-'assigned_user_name' => [
-    'nullable',
-    'string',
-    'max:200',
-],
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\LocationController;
+use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\AssetRequestController;
@@ -113,6 +114,25 @@ Route::middleware('auth:sanctum')->group(function () {
         );
 
     });
+
+    // =================================================
+// CATEGORIES
+// Semua role - hanya melihat
+// =================================================
+
+Route::middleware('role:1,2,3')->group(function () {
+
+    Route::get(
+        '/categories',
+        [CategoryController::class, 'index']
+    );
+
+    Route::get(
+        '/categories/{category}',
+        [CategoryController::class, 'show']
+    );
+
+});
 
 
     // =================================================

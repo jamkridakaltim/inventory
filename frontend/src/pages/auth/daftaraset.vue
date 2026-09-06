@@ -282,7 +282,7 @@ const menus = computed(() => {
   )
 })
 
-onMounted(() => {
+onMounted(async () => {
   const savedUser = localStorage.getItem('user')
 
   if (!savedUser) {
@@ -294,6 +294,8 @@ onMounted(() => {
     const user = JSON.parse(savedUser)
 
     userRoleId.value = Number(user?.role_id)
+
+    await fetchAssets()
 
   } catch (error) {
     console.error('Gagal membaca data user:', error)
@@ -334,31 +336,30 @@ async function fetchAssets() {
 
     if (response.data.success) {
       assets.value = response.data.data.map((asset) => ({
-        id: asset.id,
+  id: asset.id,
 
-        register: asset.asset_code ?? '-',
+  register: asset.asset_code ?? '-',
 
-        memo: asset.purchase_proof_number ?? '-',
+  memo: asset.purchase_proof_number ?? '-',
 
-        name: asset.asset_name ?? '-',
+  name: asset.asset_name ?? '-',
 
-        merk: [asset.brand, asset.model]
-          .filter(Boolean)
-          .join(' - ') || '-',
+  merk: [asset.brand, asset.model]
+    .filter(Boolean)
+    .join(' - ') || '-',
 
-        category: asset.category?.name ?? '-',
+  category: asset.category?.category_name ?? '-',
 
-        location: asset.location?.name ?? '-',
+  location: asset.location?.name ?? '-',
 
-        user: asset.assigned_user_name ?? 'Tidak ada pemakai',
+  user: asset.assignedUser?.full_name ?? 'Tidak ada pemakai',
 
-        condition: formatCondition(asset.condition_status),
+  condition: formatCondition(asset.condition_status),
 
-        price: Number(asset.acquisition_cost ?? 0),
+  price: Number(asset.acquisition_cost ?? 0),
 
-        // Simpan data asli jika nanti dibutuhkan
-        raw: asset,
-      }))
+  raw: asset,
+}))
     }
   } catch (error) {
     console.error('Gagal mengambil daftar aset:', error)
@@ -387,6 +388,18 @@ const filteredAssets = computed(() => {
   })
 })
 
+function formatCondition(value) {
+  const conditions = {
+    good: 'Baik',
+    fair: 'Rusak Ringan',
+    poor: 'Rusak Ringan',
+    damaged: 'Rusak Berat',
+    lost: 'Hilang',
+  }
+
+  return conditions[value] ?? '-'
+}
+
 function formatPrice(value) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -409,8 +422,8 @@ function deleteAsset(asset) {
   assets.value = assets.value.filter((item) => item.id !== asset.id)
 }
 
-function refreshAssets() {
-  alert('Daftar aset diperbarui.')
+async function refreshAssets() {
+  await fetchAssets()
 }
 
 function goToInputAset() {

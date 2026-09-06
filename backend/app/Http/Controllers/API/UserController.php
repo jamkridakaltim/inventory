@@ -8,38 +8,58 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     /**
      * Menampilkan semua user.
      */
-    public function index(): JsonResponse
-    {
-        $users = User::with(['role', 'department'])
-            ->orderBy('full_name')
-            ->get();
+    public function index(Request $request): JsonResponse
+{
+    $query = User::with([
+        'role',
+        'department',
+        'location',
+    ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar user berhasil diambil.',
-            'data' => $users,
-        ]);
+    // Jika location_id dikirim,
+    // hanya tampilkan user dari lokasi tersebut.
+    if ($request->filled('location_id')) {
+        $query->where(
+            'location_id',
+            $request->location_id
+        );
     }
+
+    $users = $query
+        ->orderBy('full_name')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Daftar user berhasil diambil.',
+        'data' => $users,
+    ]);
+}
 
     /**
      * Menampilkan detail user.
      */
     public function show(User $user): JsonResponse
-    {
-        $user->load(['role', 'department']);
+{
+    $user->load([
+        'role',
+        'department',
+        'location',
+    ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail user berhasil diambil.',
-            'data' => $user,
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Detail user berhasil diambil.',
+        'data' => $user,
+    ]);
+}
 
     /**
      * Menambahkan user baru.
@@ -54,7 +74,11 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
-        $user->load(['role', 'department']);
+$user->load([
+    'role',
+    'department',
+    'location',
+]);
 
         return response()->json([
             'success' => true,
@@ -63,22 +87,26 @@ class UserController extends Controller
         ], 201);
     }
 
-    /**
+/**
  * Mengubah data user.
  */
 public function update(UpdateUserRequest $request, User $user): JsonResponse
 {
-    $user->update([
-    'is_active' => true,
-]);
+    $validated = $request->validated();
 
-$user->refresh()->load(['role', 'department']);
+    $user->update($validated);
 
-return response()->json([
-    'success' => true,
-    'message' => 'User berhasil diaktifkan kembali.',
-    'data' => $user,
-]);
+    $user->refresh()->load([
+        'role',
+        'department',
+        'location',
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'User berhasil diperbarui.',
+        'data' => $user,
+    ]);
 }
 
     /**
@@ -130,7 +158,11 @@ public function destroy(User $user): JsonResponse
     ]);
 
     // Ambil ulang data beserta relasinya
-    $user->refresh()->load(['role', 'department']);
+    $user->refresh()->load([
+    'role',
+    'department',
+    'location',
+]);
 
     return response()->json([
         'success' => true,

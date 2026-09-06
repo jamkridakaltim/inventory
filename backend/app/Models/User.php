@@ -17,6 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'role_id',
         'department_id',
+        'location_id',
         'full_name',
         'username',
         'email',
@@ -54,6 +55,17 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * User bekerja pada satu Location.
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(
+            Location::class,
+            'location_id'
+        );
     }
 
     /**

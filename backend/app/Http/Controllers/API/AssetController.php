@@ -23,6 +23,7 @@ class AssetController extends Controller
     'requestItem',
     'category',
     'location',
+    'assignedUser',
     'photos',
 ])
 ->latest()
@@ -89,11 +90,9 @@ class AssetController extends Controller
 
                 'location_id' => $request->location_id,
 
-                'assigned_user_id' => null,
+'assigned_user_id' => $request->assigned_user_id,
 
-                'assigned_user_name' => $request->assigned_user_name,
-
-                'purchase_date' => $request->purchase_date,
+'purchase_date' => $request->purchase_date,
 
                 'purchase_proof_number' => $request->purchase_proof_number,
 

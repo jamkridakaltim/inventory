@@ -111,18 +111,22 @@
   <option value="" disabled>Pilih Kategori</option>
 
   <option
-    v-for="category in categories"
-    :key="category.id"
-    :value="category.id"
-  >
-    {{ category.name }}
-  </option>
+  v-for="category in categories"
+  :key="category.id"
+  :value="category.id"
+>
+  {{ category.category_name }}
+</option>
 </select>
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Lokasi *</label>
-              <select v-model="form.lokasi" class="form-select">
+              <select
+  v-model="form.lokasi"
+  class="form-select"
+  @change="loadUsersByLocation"
+>
   <option value="" disabled>Pilih Lokasi</option>
 
   <option
@@ -136,14 +140,25 @@
             </div>
 
             <div class="col-12 col-md-4">
-              <label class="form-label">Pemakai *</label>
-              <input
-  v-model="form.pemakai"
-  type="text"
-  class="form-control"
-  placeholder="Nama Pemakai"
-/>
-            </div>
+  <label class="form-label">Pemakai *</label>
+  <select
+    v-model="form.pemakai"
+    class="form-select"
+    :disabled="!form.lokasi || users.length === 0"
+  >
+    <option value="" disabled>
+      {{ !form.lokasi ? 'Pilih Lokasi terlebih dahulu' : 'Pilih Pemakai' }}
+    </option>
+
+    <option
+      v-for="user in users"
+      :key="user.id"
+      :value="user.id"
+    >
+      {{ user.full_name }}
+    </option>
+  </select>
+</div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">Harga *</label>
@@ -443,9 +458,9 @@ function validateForm() {
     errors.value.lokasi = 'Lokasi wajib dipilih.'
   }
 
-  if (!form.value.pemakai.trim()) {
-  errors.value.pemakai = 'Pemakai wajib diisi.'
-}
+  if (!form.value.pemakai) {
+    errors.value.pemakai = 'Pemakai wajib dipilih.'
+  }
 
   if (
     form.value.harga === null ||
@@ -453,18 +468,6 @@ function validateForm() {
     Number(form.value.harga) < 0
   ) {
     errors.value.harga = 'Harga wajib diisi.'
-  }
-
-  if (!form.value.fotoAset) {
-    errors.value.fotoAset = 'Foto aset wajib diupload.'
-  }
-
-  if (!form.value.fotoStiker) {
-    errors.value.fotoStiker = 'Foto stiker wajib diupload.'
-  }
-
-  if (!form.value.fotoLokasi) {
-    errors.value.fotoLokasi = 'Foto lokasi wajib diupload.'
   }
 
   return Object.keys(errors.value).length === 0
@@ -505,17 +508,16 @@ async function loadMasterData() {
       headers.Authorization = `Bearer ${token}`
     }
 
-
     /*
      * KATEGORI
      */
 
     const categoryResponse = await fetch(
-      '/api/categories',
-      {
-        headers
-      }
-    )
+  'http://127.0.0.1:8000/api/categories',
+  {
+    headers
+  }
+)
 
     if (categoryResponse.ok) {
       const categoryResult = await categoryResponse.json()
@@ -523,17 +525,16 @@ async function loadMasterData() {
       categories.value = categoryResult.data || []
     }
 
-
     /*
      * LOKASI
      */
 
     const locationResponse = await fetch(
-      '/api/locations',
-      {
-        headers
-      }
-    )
+  'http://127.0.0.1:8000/api/locations',
+  {
+    headers
+  }
+)
 
     if (locationResponse.ok) {
       const locationResult = await locationResponse.json()
@@ -541,28 +542,60 @@ async function loadMasterData() {
       locations.value = locationResult.data || []
     }
 
-
-    /*
-     * USER
-     */
-
-    const userResponse = await fetch(
-      '/api/users',
-      {
-        headers
-      }
-    )
-
-    if (userResponse.ok) {
-      const userResult = await userResponse.json()
-
-      users.value = userResult.data || []
-    }
-
   } catch (error) {
 
     console.error(
       'Gagal mengambil data master:',
+      error
+    )
+
+  }
+}
+
+
+async function loadUsersByLocation() {
+  users.value = []
+
+  form.value.pemakai = ''
+
+  if (!form.value.lokasi) {
+    return
+  }
+
+  const token = getToken()
+
+  try {
+
+    const headers = {
+      Accept: 'application/json'
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await fetch(
+  `http://127.0.0.1:8000/api/users?location_id=${form.value.lokasi}`,
+  {
+    headers
+  }
+)
+
+    if (!response.ok) {
+      console.error('Gagal mengambil user berdasarkan lokasi.')
+      return
+    }
+
+    const result = await response.json()
+
+    users.value = (result.data || []).filter(
+      user => user.is_active
+    )
+
+  } catch (error) {
+
+    console.error(
+      'Gagal mengambil data pemakai:',
       error
     )
 
@@ -632,13 +665,8 @@ async function saveAsset() {
     form.value.lokasi
   )
 
-  formData.append(
-  'assigned_user_name',
-  form.value.pemakai.trim()
-)
-
 formData.append(
-  'assigned_user_name',
+  'assigned_user_id',
   form.value.pemakai
 )
 
@@ -736,13 +764,13 @@ formData.append(
 
 
     const response = await fetch(
-      '/api/assets',
-      {
-        method: 'POST',
-        headers,
-        body: formData
-      }
-    )
+  'http://127.0.0.1:8000/api/assets',
+  {
+    method: 'POST',
+    headers,
+    body: formData
+  }
+)
 
 
     const result = await response.json()
